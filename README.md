@@ -6,10 +6,25 @@ Server phụ để lưu trữ và stream media files cho hệ thống KD Quiz.
 
 - Kết nối tới server chính qua Socket.IO
 - Nhận và lưu trữ files (text, images, videos)
-- Stream media files qua HTTP
+- Stream media files qua HTTP với range requests support
+- **Hỗ trợ mọi định dạng ảnh, video, audio**
+- **MIME type detection tự động**
+- **Lấy dung lượng ổ đĩa chính xác** (sử dụng check-disk-space)
 - Tự động cập nhật thông tin storage
 - Heartbeat để duy trì kết nối
 - Hỗ trợ Docker để dễ dàng triển khai
+- **Auto setup script cho Ubuntu Server**
+
+## Định dạng file được hỗ trợ
+
+### Ảnh
+`.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg`, `.bmp`, `.ico`, `.tiff`, `.tif`, `.heic`, `.heif`, `.avif`
+
+### Video
+`.mp4`, `.webm`, `.avi`, `.mov`, `.mkv`, `.flv`, `.wmv`, `.m4v`, `.mpg`, `.mpeg`, `.3gp`, `.ogv`, `.m2ts`, `.mts`
+
+### Audio
+`.mp3`, `.wav`, `.ogg`, `.m4a`, `.aac`, `.flac`, `.wma`
 
 ## Yêu cầu hệ thống
 
@@ -69,6 +84,53 @@ docker-compose down
 ```bash
 chmod +x start.sh
 ./start.sh
+```
+
+### Cách 4: Auto Setup trên Ubuntu Server (KHUYẾN NGHỊ)
+
+Script tự động cài đặt Node.js, dependencies, và cấu hình systemd service:
+
+```bash
+chmod +x setup-ubuntu.sh
+./setup-ubuntu.sh
+```
+
+Script sẽ tự động:
+- ✅ Cập nhật hệ thống
+- ✅ Cài đặt Node.js 18.x
+- ✅ Cài đặt dependencies
+- ✅ Tạo file .env
+- ✅ Tạo thư mục storage và logs
+- ✅ Tạo systemd service
+- ✅ Cấu hình firewall (tùy chọn)
+
+**Quản lý service sau khi cài đặt:**
+
+```bash
+# Khởi động
+sudo systemctl start dan-data-node
+
+# Dừng
+sudo systemctl stop dan-data-node
+
+# Khởi động lại
+sudo systemctl restart dan-data-node
+
+# Xem trạng thái
+sudo systemctl status dan-data-node
+
+# Xem logs
+sudo journalctl -u dan-data-node -f
+
+# Tự động khởi động khi boot
+sudo systemctl enable dan-data-node
+```
+
+**Gỡ cài đặt:**
+
+```bash
+chmod +x uninstall-ubuntu.sh
+./uninstall-ubuntu.sh
 ```
 
 ## Cấu hình
