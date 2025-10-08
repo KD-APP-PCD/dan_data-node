@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  data-node:
+    build: .
+    container_name: dan_data_node
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    environment:
+      - PORT=${PORT:-3000}
+      - STORAGE_PATH=/app/storage
+      - NODE_ENV=production
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - data-node-network
+
+networks:
+  data-node-network:
+    driver: bridge
+
+volumes:
+  storage:
+  logs:
+
