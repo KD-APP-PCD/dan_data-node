@@ -191,7 +191,7 @@ export class MatchManager {
         question.media_size = mediaSize || 0;
       }
 
-      // Thêm vào section tương ứng
+      // Thêm vào section tương ứng (UPSERT logic: update if exists, insert if not)
       if (section === 'khoi_dong_rieng' || section === 've_dich') {
         // Sections có player_index
         const playerIdx = parseInt(playerIndex);
@@ -207,13 +207,31 @@ export class MatchManager {
           match.sections[section].players.sort((a, b) => a.player_index - b.player_index);
         }
 
-        player.questions.push(question);
+        // Check if question with same order already exists
+        const existingIndex = player.questions.findIndex(q => q.order === question.order);
+        if (existingIndex >= 0) {
+          // Update existing question
+          console.log(`   ⚠️  Question order ${question.order} already exists, updating...`);
+          player.questions[existingIndex] = question;
+        } else {
+          // Add new question
+          player.questions.push(question);
+        }
         // Sort questions by order
         player.questions.sort((a, b) => a.order - b.order);
 
       } else {
         // Sections không có player_index
-        match.sections[section].questions.push(question);
+        // Check if question with same order already exists
+        const existingIndex = match.sections[section].questions.findIndex(q => q.order === question.order);
+        if (existingIndex >= 0) {
+          // Update existing question
+          console.log(`   ⚠️  Question order ${question.order} already exists, updating...`);
+          match.sections[section].questions[existingIndex] = question;
+        } else {
+          // Add new question
+          match.sections[section].questions.push(question);
+        }
         // Sort questions by order
         match.sections[section].questions.sort((a, b) => a.order - b.order);
       }
