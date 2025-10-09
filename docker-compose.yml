@@ -16,10 +16,13 @@ services:
     tty: true
     networks:
       - data-node-network
+      - kd_app-network  # Kết nối vào network của KD server
 
 networks:
   data-node-network:
     driver: bridge
+  kd_app-network:
+    external: true  # Sử dụng network có sẵn từ KD
 
 volumes:
   storage:
