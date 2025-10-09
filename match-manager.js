@@ -254,6 +254,82 @@ export class MatchManager {
   }
 
   /**
+   * Cập nhật câu hỏi trong match.json
+   * SỬ DỤNG QUEUE để tránh race condition
+   */
+  async updateQuestion(matchId, updateData) {
+    return this.queueOperation(matchId, async () => {
+      console.log(`🔒 [QUEUE] Acquiring lock for updateQuestion: ${matchId}`);
+
+      const match = await this.getMatch(matchId);
+
+      const {
+        section,
+        playerIndex,
+        order,
+        questionData
+      } = updateData;
+
+      console.log(`📝 Updating question in ${section}, player ${playerIndex}, order ${order}`);
+
+      // Tìm và cập nhật câu hỏi
+      if (section === 'khoi_dong_rieng' || section === 've_dich') {
+        // Sections có player_index
+        const playerIdx = parseInt(playerIndex);
+        const player = match.sections[section].players.find(p => p.player_index === playerIdx);
+
+        if (!player) {
+          throw new Error(`Player ${playerIdx} không tồn tại trong ${section}`);
+        }
+
+        const questionIndex = player.questions.findIndex(q => q.order === parseInt(order));
+        if (questionIndex < 0) {
+          throw new Error(`Câu hỏi order ${order} không tồn tại`);
+        }
+
+        // Cập nhật question (giữ lại media info nếu không thay đổi)
+        const existingQuestion = player.questions[questionIndex];
+        player.questions[questionIndex] = {
+          ...existingQuestion,
+          type: questionData.type || existingQuestion.type,
+          question_text: questionData.question_text !== undefined ? questionData.question_text : existingQuestion.question_text,
+          answer: questionData.answer !== undefined ? questionData.answer : existingQuestion.answer,
+          points: questionData.points !== undefined ? questionData.points : existingQuestion.points,
+          time_limit: questionData.time_limit !== undefined ? questionData.time_limit : existingQuestion.time_limit
+        };
+
+      } else {
+        // Sections không có player_index
+        const questionIndex = match.sections[section].questions.findIndex(q => q.order === parseInt(order));
+        if (questionIndex < 0) {
+          throw new Error(`Câu hỏi order ${order} không tồn tại trong ${section}`);
+        }
+
+        // Cập nhật question
+        const existingQuestion = match.sections[section].questions[questionIndex];
+        match.sections[section].questions[questionIndex] = {
+          ...existingQuestion,
+          type: questionData.type || existingQuestion.type,
+          question_text: questionData.question_text !== undefined ? questionData.question_text : existingQuestion.question_text,
+          answer: questionData.answer !== undefined ? questionData.answer : existingQuestion.answer,
+          points: questionData.points !== undefined ? questionData.points : existingQuestion.points,
+          time_limit: questionData.time_limit !== undefined ? questionData.time_limit : existingQuestion.time_limit
+        };
+      }
+
+      // Cập nhật statistics
+      match.statistics.last_updated = new Date().toISOString();
+
+      await this.saveMatchJson(matchId, match);
+
+      console.log(`✅ [QUEUE] Đã cập nhật câu hỏi trong ${matchId}/${section}`);
+      console.log(`🔓 [QUEUE] Released lock for updateQuestion: ${matchId}`);
+
+      return match;
+    });
+  }
+
+  /**
    * Xóa câu hỏi
    * SỬ DỤNG QUEUE để tránh race condition
    */

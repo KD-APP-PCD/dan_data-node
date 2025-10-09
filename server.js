@@ -338,6 +338,29 @@ async function connectToMainServer(host, port, nodeName) {
       }
     });
 
+    // Cập nhật câu hỏi
+    mainServerSocket.on('update_question', async (data, callback) => {
+      try {
+        const { matchId, ...updateData } = data;
+        console.log(`📝 [UPDATE_QUESTION] Nhận yêu cầu cập nhật câu hỏi trong ${matchId}`);
+
+        const match = await matchManager.updateQuestion(matchId, updateData);
+
+        callback({
+          success: true,
+          data: match,
+          message: 'Đã cập nhật câu hỏi thành công'
+        });
+
+      } catch (error) {
+        console.error('❌ [UPDATE_QUESTION] Lỗi:', error);
+        callback({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
     // Xóa câu hỏi
     mainServerSocket.on('delete_question', async (data, callback) => {
       try {
@@ -607,9 +630,9 @@ async function handleFileUpload(data) {
   const fileSize = buffer.length;
   console.log(`✅ Đã lưu file: ${filePath} (${(fileSize / 1024 / 1024).toFixed(2)} MB) - Type: ${detectedFileType}`);
 
-  // Tạo stream URL
+  // Tạo stream URL - Sử dụng HOST thay vì localhost để có thể access từ bên ngoài
   const relativePath = folder ? `${folder}/${uniqueFileName}` : uniqueFileName;
-  const streamUrl = `http://localhost:${PORT}/stream/${relativePath}`;
+  const streamUrl = `http://${HOST}:${PORT}/stream/${relativePath}`;
 
   return {
     filePath: filePath,
@@ -738,6 +761,12 @@ app.get('/stream/:matchId/:fileName', async (req, res) => {
     if (mimeType) {
       res.setHeader('Content-Type', mimeType);
     }
+
+    // Set CORS headers để cho phép access từ browser
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Range');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
 
     // Set cache headers cho performance
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
